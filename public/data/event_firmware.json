@@ -31,7 +31,7 @@
       ],
       "theme": {
         "name": "Matrix Green",
-        "tagline": "Custom Pager firmware with Matrix Green, ringtone, volume, and brightness controls.",
+        "tagline": "Custom Pager firmware with Matrix Green, ringtone, and volume controls.",
         "colors": {
           "primary": "#00FF00",
           "secondary": "#0D294A",
@@ -50,11 +50,11 @@
       },
       "firmware": {
         "slug": "pager",
-        "version": "2.8.0.0748c44",
-        "id": "v2.8.0.0748c44",
-        "title": "Pager Custom Firmware 2.8.0.0748c44",
-        "zipUrl": "https://pager.0bn.cc/event/pager/firmware-2.8.0.0748c44.zip",
-        "releaseNotes": "## Pager Custom Firmware 2.8.0.0748c44\n\nBuilt from the DEF CON 34 firmware for the LILYGO T-LoRa Pager.\n\n### Included customizations\n\n- Matrix Green display theme\n- Four selectable Pager ringtones\n- Persistent audio volume control\n- Persistent display brightness control\n\n### Flash options\n\n- **Update:** writes the application only and preserves device settings.\n- **Full Erase and Install:** uses the standard Meshtastic full-install flow and erases device settings. Back up important configuration and keys first.\n\nUse a data-capable USB cable and a desktop Chromium browser."
+        "version": "2.8.0.ac7a71e",
+        "id": "v2.8.0.ac7a71e",
+        "title": "Pager Custom Firmware 2.8.0.ac7a71e (Safe Rollback)",
+        "zipUrl": "https://pager.0bn.cc/event/pager/firmware-2.8.0.ac7a71e.zip",
+        "releaseNotes": "## Pager Custom Firmware 2.8.0.ac7a71e\n\nSafe rollback built from commit `ac7a71e64` for the LILYGO T-LoRa Pager. The persistent display brightness change is not included.\n\n### Included customizations\n\n- Matrix Green display theme\n- Four selectable Pager ringtones\n- Persistent audio volume control\n\n### Flash options\n\n- **Update:** writes the application only and preserves device settings.\n- **Full Erase and Install:** uses the standard Meshtastic full-install flow and erases device settings. Back up important configuration and keys first.\n\nUse a data-capable USB cable and a desktop Chromium browser."
       }
     }
   ]

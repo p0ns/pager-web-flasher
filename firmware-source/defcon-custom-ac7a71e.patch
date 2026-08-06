@@ -1,0 +1,371 @@
+From ac7a71e642abeda630784ef57bc8d89ebd99f781 Mon Sep 17 00:00:00 2001
+From: p0ns <pons@p0ns.org>
+Date: Wed, 5 Aug 2026 23:27:08 -0300
+Subject: [PATCH] feat(tlora-pager): add custom theme and audio menus
+
+---
+ src/graphics/SharedUIDisplay.cpp              |   2 +-
+ src/graphics/TFTColorRegions.cpp              |  33 +++++-
+ src/graphics/TFTColorRegions.h                |   1 +
+ src/graphics/draw/MenuHandler.cpp             | 106 +++++++++++++++++-
+ src/graphics/draw/MenuHandler.h               |   4 +
+ .../t_lora_pager/TLoraPagerAudio.h            |   6 +
+ .../extra_variants/t_lora_pager/variant.cpp   |  52 ++++++++-
+ userPrefs.jsonc                               |   2 +-
+ 8 files changed, 200 insertions(+), 6 deletions(-)
+ create mode 100644 src/platform/extra_variants/t_lora_pager/TLoraPagerAudio.h
+
+diff --git a/src/graphics/SharedUIDisplay.cpp b/src/graphics/SharedUIDisplay.cpp
+index 88ba3f96b..0faa0cf6b 100644
+--- a/src/graphics/SharedUIDisplay.cpp
++++ b/src/graphics/SharedUIDisplay.cpp
+@@ -78,7 +78,7 @@ uint32_t lastMailBlink = 0;
+ static inline bool useClockHeaderAccentTheme(uint32_t themeId)
+ {
+     return themeId == ThemeID::Pink || themeId == ThemeID::Creamsicle || themeId == ThemeID::MeshtasticGreen ||
+-           themeId == ThemeID::ClassicRed || themeId == ThemeID::MonochromeWhite;
++           themeId == ThemeID::MatrixGreen || themeId == ThemeID::ClassicRed || themeId == ThemeID::MonochromeWhite;
+ }
+ 
+ // *********************************
+diff --git a/src/graphics/TFTColorRegions.cpp b/src/graphics/TFTColorRegions.cpp
+index 54d3e3265..afdf4bbc4 100644
+--- a/src/graphics/TFTColorRegions.cpp
++++ b/src/graphics/TFTColorRegions.cpp
+@@ -50,12 +50,14 @@ static inline bool isBodyColorRole(TFTColorRole role)
+ 
+ static inline bool isMonochromeTheme(uint32_t themeId)
+ {
+-    return themeId == ThemeID::MeshtasticGreen || themeId == ThemeID::ClassicRed || themeId == ThemeID::MonochromeWhite;
++    return themeId == ThemeID::MeshtasticGreen || themeId == ThemeID::MatrixGreen || themeId == ThemeID::ClassicRed ||
++           themeId == ThemeID::MonochromeWhite;
+ }
+ 
+ static inline uint16_t getMonochromeAccent(uint32_t themeId)
+ {
+     return (themeId == ThemeID::MeshtasticGreen) ? TFTPalette::MeshtasticGreen
++           : (themeId == ThemeID::MatrixGreen)   ? TFTPalette::Green
+            : (themeId == ThemeID::ClassicRed)    ? TFTPalette::ClassicRed
+                                                  : TFTPalette::White;
+ }
+@@ -310,6 +312,35 @@ static const TFTThemeDef kThemes[] = {
+         true,              // visible
+     },
+ 
++    // Matrix Green (ThemeID::MatrixGreen = 9) classic monochrome
++    {
++        ThemeID::MatrixGreen, // id
++        "Matrix Green",       // name
++        9,                    // uniqueIdentifier
++        {
++            {TFTPalette::Green, TFTPalette::Black}, // HeaderBackground
++            {TFTPalette::Green, TFTPalette::Black}, // HeaderTitle
++            {TFTPalette::Green, TFTPalette::Black}, // HeaderStatus
++            {TFTPalette::Green, TFTPalette::Black}, // SignalBars
++            {TFTPalette::Green, TFTPalette::Black}, // ConnectionIcon
++            {TFTPalette::Green, TFTPalette::Black}, // UtilizationFill
++            {TFTPalette::Green, TFTPalette::Black}, // FavoriteNode
++            {TFTPalette::Green, TFTPalette::Black}, // ActionMenuBorder
++            {TFTPalette::Green, TFTPalette::Black}, // ActionMenuBody
++            {TFTPalette::Green, TFTPalette::Black}, // ActionMenuTitle
++            {TFTPalette::Black, TFTPalette::Green}, // FrameMono (bodyBg, bodyFg)
++            {TFTPalette::Green, TFTPalette::Black}, // BootSplash
++            {TFTPalette::Green, TFTPalette::Black}, // FavoriteNodeBGHighlight
++            {TFTPalette::Green, TFTPalette::Black}, // NavigationBar
++            {TFTPalette::Green, TFTPalette::Black}, // NavigationArrow
++        },
++        TFTPalette::Black, // batteryFillGood
++        TFTPalette::Black, // batteryFillMedium
++        TFTPalette::Black, // batteryFillBad
++        true,              // fullFrameInvert
++        true,              // visible
++    },
++
+     // Classic Red (ThemeID::ClassicRed = 7) classic monochrome
+     {
+         ThemeID::ClassicRed, // id
+diff --git a/src/graphics/TFTColorRegions.h b/src/graphics/TFTColorRegions.h
+index 9de74b85a..e8da04380 100644
+--- a/src/graphics/TFTColorRegions.h
++++ b/src/graphics/TFTColorRegions.h
+@@ -131,6 +131,7 @@ constexpr uint32_t Creamsicle = 5;
+ constexpr uint32_t MeshtasticGreen = 6;
+ constexpr uint32_t ClassicRed = 7;
+ constexpr uint32_t MonochromeWhite = 8;
++constexpr uint32_t MatrixGreen = 9;
+ } // namespace ThemeID
+ 
+ // Per-role color pair stored in native (little-endian) RGB565 format.
+diff --git a/src/graphics/draw/MenuHandler.cpp b/src/graphics/draw/MenuHandler.cpp
+index 6625d4303..8f7d08703 100644
+--- a/src/graphics/draw/MenuHandler.cpp
++++ b/src/graphics/draw/MenuHandler.cpp
+@@ -25,6 +25,9 @@
+ #include "modules/CannedMessageModule.h"
+ #include "modules/ExternalNotificationModule.h"
+ #include "modules/KeyVerificationModule.h"
++#ifdef T_LORA_PAGER
++#include "platform/extra_variants/t_lora_pager/TLoraPagerAudio.h"
++#endif
+ #include "modules/TraceRouteModule.h"
+ #include <algorithm>
+ #include <array>
+@@ -58,6 +61,21 @@ BannerOverlayOptions createStaticBannerOptions(const char *message, const MenuOp
+     return bannerOptions;
+ }
+ 
++#ifdef T_LORA_PAGER
++struct RingtoneChoice {
++    const char *name;
++    const char *rtttl;
++};
++
++static constexpr RingtoneChoice ringtoneChoices[] = {
++    {"Meshtastic", "24:d=32,o=5,b=565:f6,p,f6,4p,p,f6,p,f6,2p,p,b6,p,b6,p,b6,p,b6,p,b,p,b,p,b,p,b,p,b,p,b,p,b,p,b,1p.,2p.,p"},
++    {"Classic Pager", "Pager:d=16,o=6,b=180:c,p,g,p,c,p,g,8p"},
++    {"Dispatch", "Dispatch:d=16,o=6,b=210:g,p,b,p,d7,8p,g,p,d7"},
++    {"Matrix Chirp", "Matrix:d=32,o=6,b=240:e,g,b,e7,p,b,g,e,8p"},
++};
++static constexpr size_t ringtoneChoiceCount = sizeof(ringtoneChoices) / sizeof(ringtoneChoices[0]);
++#endif
++
+ const StoredMessage *getNewestMessageForActiveThread()
+ {
+     const auto &messages = messageStore.getMessages();
+@@ -2131,12 +2149,29 @@ void menuHandler::bluetoothToggleMenu()
+ 
+ void menuHandler::BuzzerModeMenu()
+ {
++#ifdef T_LORA_PAGER
++    static const char *optionsArray[] = {"All Enabled", "All Disabled", "Notifications", "System Only",
++                                         "DMs Only",    "Ringtone",     "Volume"};
++#else
+     static const char *optionsArray[] = {"All Enabled", "All Disabled", "Notifications", "System Only", "DMs Only"};
++#endif
+     BannerOverlayOptions bannerOptions;
+     bannerOptions.message = "Notification Sounds";
+     bannerOptions.optionsArrayPtr = optionsArray;
+-    bannerOptions.optionsCount = 5;
++    bannerOptions.optionsCount = sizeof(optionsArray) / sizeof(optionsArray[0]);
+     bannerOptions.bannerCallback = [](int selected) -> void {
++#ifdef T_LORA_PAGER
++        if (selected == 5) {
++            menuQueue = RingtoneMenu;
++            screen->runNow();
++            return;
++        }
++        if (selected == 6) {
++            menuQueue = VolumeMenu;
++            screen->runNow();
++            return;
++        }
++#endif
+         config.device.buzzer_mode = (meshtastic_Config_DeviceConfig_BuzzerMode)selected;
+         service->reloadConfig(SEGMENT_CONFIG);
+     };
+@@ -2144,6 +2179,69 @@ void menuHandler::BuzzerModeMenu()
+     screen->showOverlayBanner(bannerOptions);
+ }
+ 
++void menuHandler::ringtoneMenu()
++{
++#ifdef T_LORA_PAGER
++    static const char *optionsArray[] = {"Back", ringtoneChoices[0].name, ringtoneChoices[1].name, ringtoneChoices[2].name,
++                                         ringtoneChoices[3].name};
++    BannerOverlayOptions bannerOptions;
++    bannerOptions.message = "Ringtone";
++    bannerOptions.optionsArrayPtr = optionsArray;
++    bannerOptions.optionsCount = sizeof(optionsArray) / sizeof(optionsArray[0]);
++    bannerOptions.InitialSelected = (uiconfig.ring_tone_id < ringtoneChoiceCount) ? uiconfig.ring_tone_id + 1 : 1;
++    bannerOptions.bannerCallback = [](int selected) -> void {
++        if (selected > 0 && static_cast<size_t>(selected) <= ringtoneChoiceCount) {
++            const uint8_t ringtoneId = static_cast<uint8_t>(selected - 1);
++            uiconfig.ring_tone_id = ringtoneId;
++            saveUIConfig();
++            if (externalNotificationModule) {
++                externalNotificationModule->handleSetRingtone(ringtoneChoices[ringtoneId].rtttl);
++            }
++        }
++        menuQueue = BuzzerModeMenuPicker;
++        screen->runNow();
++    };
++    screen->showOverlayBanner(bannerOptions);
++#else
++    menuQueue = BuzzerModeMenuPicker;
++    screen->runNow();
++#endif
++}
++
++void menuHandler::volumeMenu()
++{
++#ifdef T_LORA_PAGER
++    static const char *optionsArray[] = {"Back", "100%", "75%", "50%", "25%", "0%"};
++    static constexpr uint8_t volumeLevels[] = {100, 75, 50, 25, 0};
++
++    BannerOverlayOptions bannerOptions;
++    bannerOptions.message = "Volume";
++    bannerOptions.optionsArrayPtr = optionsArray;
++    bannerOptions.optionsCount = sizeof(optionsArray) / sizeof(optionsArray[0]);
++
++    const uint8_t currentVolume = getTLoraPagerVolume();
++    bannerOptions.InitialSelected = 0;
++    for (size_t i = 0; i < sizeof(volumeLevels) / sizeof(volumeLevels[0]); i++) {
++        if (volumeLevels[i] == currentVolume) {
++            bannerOptions.InitialSelected = static_cast<int>(i + 1);
++            break;
++        }
++    }
++
++    bannerOptions.bannerCallback = [](int selected) -> void {
++        if (selected > 0 && static_cast<size_t>(selected) <= sizeof(volumeLevels) / sizeof(volumeLevels[0])) {
++            setTLoraPagerVolume(volumeLevels[selected - 1]);
++        }
++        menuQueue = BuzzerModeMenuPicker;
++        screen->runNow();
++    };
++    screen->showOverlayBanner(bannerOptions);
++#else
++    menuQueue = BuzzerModeMenuPicker;
++    screen->runNow();
++#endif
++}
++
+ void menuHandler::BrightnessPickerMenu()
+ {
+     static const char *optionsArray[] = {"Back", "Low", "Medium", "High"};
+@@ -2846,6 +2944,12 @@ void menuHandler::handleMenuSwitch(OLEDDisplay *display)
+     case BuzzerModeMenuPicker:
+         BuzzerModeMenu();
+         break;
++    case RingtoneMenu:
++        ringtoneMenu();
++        break;
++    case VolumeMenu:
++        volumeMenu();
++        break;
+     case MuiPicker:
+         switchToMUIMenu();
+         break;
+diff --git a/src/graphics/draw/MenuHandler.h b/src/graphics/draw/MenuHandler.h
+index b924c9197..f9e9328f5 100644
+--- a/src/graphics/draw/MenuHandler.h
++++ b/src/graphics/draw/MenuHandler.h
+@@ -29,6 +29,8 @@ class menuHandler
+         CompassPointNorthMenu,
+         ResetNodeDbMenu,
+         BuzzerModeMenuPicker,
++        RingtoneMenu,
++        VolumeMenu,
+         MuiPicker,
+         BrightnessPicker,
+         RebootMenu,
+@@ -91,6 +93,8 @@ class menuHandler
+     static void GPSUpdateIntervalMenu();
+     static void GPSPositionBroadcastMenu();
+     static void BuzzerModeMenu();
++    static void ringtoneMenu();
++    static void volumeMenu();
+     static void switchToMUIMenu();
+     static void nodeListMenu();
+     static void resetNodeDBMenu();
+diff --git a/src/platform/extra_variants/t_lora_pager/TLoraPagerAudio.h b/src/platform/extra_variants/t_lora_pager/TLoraPagerAudio.h
+new file mode 100644
+index 000000000..c67979e16
+--- /dev/null
++++ b/src/platform/extra_variants/t_lora_pager/TLoraPagerAudio.h
+@@ -0,0 +1,6 @@
++#pragma once
++
++#include <stdint.h>
++
++uint8_t getTLoraPagerVolume();
++void setTLoraPagerVolume(uint8_t volume);
+diff --git a/src/platform/extra_variants/t_lora_pager/variant.cpp b/src/platform/extra_variants/t_lora_pager/variant.cpp
+index 19c8881ca..591250947 100644
+--- a/src/platform/extra_variants/t_lora_pager/variant.cpp
++++ b/src/platform/extra_variants/t_lora_pager/variant.cpp
+@@ -3,10 +3,57 @@
+ #ifdef T_LORA_PAGER
+ 
+ #include "AudioBoard.h"
++#include "FSCommon.h"
++#include "SafeFile.h"
++#include "TLoraPagerAudio.h"
+ 
+ DriverPins PinsAudioBoardES8311;
+ AudioBoard board(AudioDriverES8311, PinsAudioBoardES8311);
+ 
++namespace
++{
++constexpr uint8_t DEFAULT_AUDIO_VOLUME = 75;
++constexpr const char *AUDIO_VOLUME_FILE = "/prefs/audio-volume";
++uint8_t currentAudioVolume = DEFAULT_AUDIO_VOLUME;
++
++uint8_t loadAudioVolume()
++{
++#ifdef FSCom
++    auto file = FSCom.open(AUDIO_VOLUME_FILE, FILE_O_READ);
++    if (file) {
++        const int savedVolume = file.read();
++        file.close();
++        if (savedVolume >= 0 && savedVolume <= 100) {
++            return static_cast<uint8_t>(savedVolume);
++        }
++    }
++#endif
++    return DEFAULT_AUDIO_VOLUME;
++}
++} // namespace
++
++uint8_t getTLoraPagerVolume()
++{
++    return currentAudioVolume;
++}
++
++void setTLoraPagerVolume(uint8_t volume)
++{
++    if (volume > 100) {
++        return;
++    }
++
++    currentAudioVolume = volume;
++    board.setVolume(volume);
++
++#ifdef FSCom
++    FSCom.mkdir("/prefs");
++    SafeFile file(AUDIO_VOLUME_FILE, true);
++    file.write(volume);
++    file.close();
++#endif
++}
++
+ // TLora Pager specific init
+ void lateInitVariant()
+ {
+@@ -23,6 +70,7 @@ void lateInitVariant()
+     cfg.i2s.bits = BIT_LENGTH_16BITS;
+     cfg.i2s.rate = RATE_44K;
+     board.begin(cfg);
+-    board.setVolume(75); // 75% volume
++    currentAudioVolume = loadAudioVolume();
++    board.setVolume(currentAudioVolume);
+ }
+-#endif
+\ No newline at end of file
++#endif
+diff --git a/userPrefs.jsonc b/userPrefs.jsonc
+index d1885abbe..3c2c12736 100644
+--- a/userPrefs.jsonc
++++ b/userPrefs.jsonc
+@@ -99,7 +99,7 @@
+   "USERPREFS_RINGTONE_NAG_SECS": "2",
+   // "USERPREFS_NODEINFO_REPLY_SUPPRESS_SECS": "43200",
+   // "USERPREFS_UI_TEST_LOG": "true", // Test-only: emits `Screen: frame N/M name=... reason=...` log per UI transition (for the meshtastic-mcp ui test tier); off in release builds.
+-  "USERPREFS_RINGTONE_RTTTL": "24:d=8,o=5,b=160:f#,f#,f#,d,p,b4,p,e,p,e,p,e,g#,g#,a,b,a,a,a,e,p,d,p,f#,p,f#,p,f#,e,e,f#,e",
++  "USERPREFS_RINGTONE_RTTTL": "24:d=32,o=5,b=565:f6,p,f6,4p,p,f6,p,f6,2p,p,b6,p,b6,p,b6,p,b6,p,b,p,b,p,b,p,b,p,b,p,b,p,b,p,b,1p.,2p.,p",
+   // "USERPREFS_NETWORK_IPV6_ENABLED": "1",
+   "USERPREFS_TZ_STRING": "PST8PDT,M3.2.0,M11.1.0",
+   // "FACTORY_INSTALL": "1",
+-- 
+2.54.0
+

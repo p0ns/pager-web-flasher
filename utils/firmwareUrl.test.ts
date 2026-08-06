@@ -58,10 +58,10 @@ describe('firmwareUrl', () => {
       }
       eventMode.domain = 'pager.0bn.cc'
       eventMode.pathPrefix = 'pager'
-      eventMode.firmware = { id: 'v2.8.0.0748c44', title: 'Pager Custom Firmware' }
+      eventMode.firmware = { id: 'v2.8.0.ac7a71e', title: 'Pager Custom Firmware' }
 
       try {
-        expect(getFirmwareBaseUrl('2.8.0.0748c44')).toBe('/event/pager/firmware-2.8.0.0748c44')
+        expect(getFirmwareBaseUrl('2.8.0.ac7a71e')).toBe('/event/pager/firmware-2.8.0.ac7a71e')
       }
       finally {
         eventMode.domain = previous.domain
