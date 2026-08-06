@@ -95,4 +95,5 @@ sw.*
 .vercel
 
 .playwright-mcp
+.claude/worktrees/
 .vscode/settings.json
