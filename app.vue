@@ -144,7 +144,7 @@
         </a>
         <a
           v-if="!serialMonitorStore.isConnected"
-          href="https://github.com/meshtastic/web-flasher"
+          href="https://github.com/p0ns/pager-web-flasher"
           class="btn-secondary"
         >
           {{ $t('buttons.contribute') }}
@@ -168,18 +168,20 @@
     >
       <div class="container mx-auto px-3 sm:px-5 py-2 sm:py-4 text-center">
         <p class="text-xs sm:text-sm text-theme-muted">
-          Powered by
+          Hosted on
           <a
-            href="https://vercel.com/?utm_source=meshtastic&utm_campaign=oss"
+            href="https://pages.cloudflare.com"
             class="link-theme"
-          >▲ Vercel</a>
+          >Cloudflare Pages</a>
+          <span class="mx-2 text-theme-muted/50">•</span>
+          <a
+            href="https://github.com/p0ns/pager-web-flasher"
+            class="link-theme"
+          >Source and GPL-3.0 license</a>
+          <span class="mx-2 text-theme-muted/50">•</span>
+          No warranty.
           <span class="mx-2 text-theme-muted/50">•</span>
           Meshtastic® is a registered trademark of Meshtastic LLC.
-          <span class="mx-2 text-theme-muted/50">•</span>
-          <a
-            href="https://meshtastic.org/docs/legal"
-            class="link-theme"
-          >Legal Information</a>
         </p>
       </div>
     </footer>

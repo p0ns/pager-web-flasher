@@ -43,5 +43,7 @@ export function getManifestBasePath(version: string): string {
  * @returns The base URL for the firmware files directory
  */
 export function getFirmwareBaseUrl(version: string): string {
-  return `${GITHUB_IO_BASE}/${getManifestBasePath(version)}`
+  const basePath = getManifestBasePath(version)
+  if (eventMode.domain === 'pager.0bn.cc') return `/${basePath}`
+  return `${GITHUB_IO_BASE}/${basePath}`
 }

@@ -55,6 +55,9 @@ export const useDeviceStore = defineStore('device', {
      * can still re-resolve the edition from the live API after mount.
      */
     targets(): DeviceHardware[] {
+      if (eventMode.domain === 'pager.0bn.cc') {
+        return this.apiTargets.filter(target => target.platformioTarget === 'tlora-pager')
+      }
       // Co-branded builds are pinned to one vendor's devices; never widen them.
       if (vendorCobrandingTag.length > 0) return this.apiTargets
       return applyEventDeviceOverrides(this.apiTargets, eventMode.enabled ? eventMode.eventTag : undefined)
@@ -305,7 +308,7 @@ export const useDeviceStore = defineStore('device', {
         // Use a timeout and proceed anyway if it times out
         try {
           const configurePromise = device.configure()
-          const configureTimeout = new Promise<void>((resolve) =>
+          const configureTimeout = new Promise<void>(resolve =>
             setTimeout(resolve, 5000),
           )
           await Promise.race([configurePromise, configureTimeout])

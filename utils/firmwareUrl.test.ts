@@ -50,11 +50,31 @@ describe('firmwareUrl', () => {
   })
 
   describe('getFirmwareBaseUrl', () => {
+    it('returns a same-origin URL for the Pager deployment', () => {
+      const previous = {
+        domain: eventMode.domain,
+        pathPrefix: eventMode.pathPrefix,
+        firmware: eventMode.firmware,
+      }
+      eventMode.domain = 'pager.0bn.cc'
+      eventMode.pathPrefix = 'pager'
+      eventMode.firmware = { id: 'v2.8.0.0748c44', title: 'Pager Custom Firmware' }
+
+      try {
+        expect(getFirmwareBaseUrl('2.8.0.0748c44')).toBe('/event/pager/firmware-2.8.0.0748c44')
+      }
+      finally {
+        eventMode.domain = previous.domain
+        eventMode.pathPrefix = previous.pathPrefix
+        eventMode.firmware = previous.firmware
+      }
+    })
+
     it('returns full event URL for event firmware', () => {
       const result = getFirmwareBaseUrl(eventVersion)
       console.log(`[EVENT FULL URL] getFirmwareBaseUrl('${eventVersion}') =>\n  ${result}`)
       expect(result).toBe(
-        `${GITHUB_IO_BASE}/${eventBasePath}`
+        `${GITHUB_IO_BASE}/${eventBasePath}`,
       )
     })
 
@@ -63,7 +83,7 @@ describe('firmwareUrl', () => {
       const result = getFirmwareBaseUrl(regularVersion)
       console.log(`[REGULAR FULL URL] getFirmwareBaseUrl('${regularVersion}') =>\n  ${result}`)
       expect(result).toBe(
-        `${GITHUB_IO_BASE}/firmware-2.7.19.abcdef`
+        `${GITHUB_IO_BASE}/firmware-2.7.19.abcdef`,
       )
     })
 
@@ -72,7 +92,7 @@ describe('firmwareUrl', () => {
       const result = getFirmwareBaseUrl(stableVersion)
       console.log(`[STABLE FULL URL] getFirmwareBaseUrl('${stableVersion}') =>\n  ${result}`)
       expect(result).toBe(
-        `${GITHUB_IO_BASE}/firmware-2.5.0`
+        `${GITHUB_IO_BASE}/firmware-2.5.0`,
       )
     })
   })
